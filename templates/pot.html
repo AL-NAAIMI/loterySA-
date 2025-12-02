@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="pot-display">
+    <h2>Montant de la cagnotte</h2>
+    <div class="pot-amount">
+        <span class="amount">{{ solde }}</span> <span class="currency">ETH</span>
+    </div>
+    <p class="contract-info">Adresse du contrat : <code>{{ contract_address }}</code></p>
+
+    <a href="{{ url_for('participer') }}" class="btn btn-primary">Ajouter au pot (Participer)</a>
+</section>
+{% endblock %}
