@@ -4,7 +4,7 @@ import json
 import os
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey_loterie_nailloux'
+app.secret_key = 'itsMySecretKeyHOHOHO!'
 
 def get_active_contract():
     """Récupère l'adresse du contrat actif depuis state.json"""
