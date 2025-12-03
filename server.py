@@ -22,31 +22,22 @@ def index():
     contract_address = get_active_contract()
     return render_template('index.html', contract_address=contract_address)
 
-@app.route('/participer', methods=['GET', 'POST'])
+@app.route('/participer', methods=['GET'])
 def participer():
+    """Page pour participer à la loterie via MetaMask"""
     contract_address = get_active_contract()
-    
-    if request.method == 'POST':
-        if not contract_address:
-            flash("Erreur : Aucun contrat n'est actif actuellement.", "error")
-            return redirect(url_for('index'))
 
-        user_address = request.form.get('address')
-        user_key = request.form.get('key')
-        
-        if not user_address or not user_key:
-            flash("Veuillez remplir tous les champs.", "error")
-            return redirect(url_for('participer'))
+    if not contract_address:
+        contract_abi = []  # Aucun contrat actif
+    else:
+        abi, _ = deploy.get_contract_data()
+        contract_abi = json.dumps(abi)
 
-        try:
-            deploy.participer(contract_address, user_address, user_key)
-            flash("Félicitations ! Vous avez participé avec succès.", "success")
-            return redirect(url_for('index'))
-        except Exception as e:
-            flash(f"Erreur lors de la participation : {str(e)}", "error")
-            return redirect(url_for('participer'))
-
-    return render_template('participer.html', contract_address=contract_address)
+    return render_template(
+        "participer.html",
+        contract_address=contract_address,
+        contract_abi=contract_abi
+    )
 
 @app.route('/cagnotte')
 def cagnotte():
