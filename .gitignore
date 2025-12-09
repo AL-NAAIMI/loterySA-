@@ -1,0 +1,9 @@
+#securitymd
+SECURITY.md
+# Node modules
+node_modules/
+__pycache__/
+state.json
+env/
+env*.env
+*.env
