@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card border-0 shadow-lg login-card">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='logo/logo-CPN.png') }}" alt="Logo du Club Photo Nailloux" style="height: 80px; width: auto;" class="mb-3">
+                        <h3 class="fw-bold mb-2">Administration</h3>
+                        <p class="text-muted small">Connectez-vous pour gérer la loterie</p>
+                    </div>
+
+                    <form action="{{ url_for('login') }}" method="POST" autocomplete="off">
+                        <div class="mb-4">
+                            <label for="username" class="form-label fw-semibold">Nom d'utilisateur</label>
+                            <input type="text" class="form-control form-control-lg" id="username" name="username" 
+                                maxlength="50" autocomplete="off" required autofocus>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">Mot de passe</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                                maxlength="100" autocomplete="current-password" required>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">Se connecter</button>
+                        </div>
+
+                        <div class="text-center">
+                            <a href="{{ url_for('index') }}" class="text-decoration-none small text-muted">← Retour à l'accueil</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

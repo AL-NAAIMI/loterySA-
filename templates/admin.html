@@ -12,7 +12,7 @@
                 <div class="card-body">
                     <p class="card-text text-muted">Déployez une nouvelle instance du contrat de loterie sur la
                         blockchain.</p>
-                    <form action="{{ url_for('admin_deploy') }}" method="POST">
+                    <form action="{{ url_for('admin_deploy') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir déployer un nouveau contrat ?');">
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">Déployer un nouveau contrat</button>
                         </div>
@@ -33,7 +33,7 @@
                 <div class="card-body">
                     <p class="card-text text-muted">Lancez le tirage pour désigner le gagnant parmi les participants.
                     </p>
-                    <form action="{{ url_for('admin_tirage') }}" method="POST">
+                    <form action="{{ url_for('admin_tirage') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir lancer le tirage ? Cette action est irréversible.');">
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success" {% if not contract_address %}disabled{% endif
                                 %}>
