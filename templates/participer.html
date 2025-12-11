@@ -44,7 +44,7 @@
             // Nom exact de la fonction Solidity : 'participer'
             await contract.methods.participer().send({
                 from: accounts[0],
-                value: web3.utils.toWei("1", "ether")
+                value: web3.utils.toWei("0.01", "ether")
             });
 
             alert("Participation envoyée !");
