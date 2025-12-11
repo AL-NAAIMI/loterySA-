@@ -6,6 +6,10 @@ import json
 import os
 import secrets
 import re
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'itsMySecretKeyHOHOHO!')
@@ -16,9 +20,9 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
 
-# Credentials for admin login ill change it later to env variables
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'nailloux2025')
+# Credentials for admin login from environment variables
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
 # Security headers
 @app.after_request
@@ -120,7 +124,7 @@ def cagnotte():
     solde = 0
     if contract_address:
         try:
-            solde = deploy.get_balance(contract_address)
+            solde = float(deploy.get_balance(contract_address))
         except:
             solde = "Erreur de lecture"
             
@@ -167,12 +171,19 @@ def logout():
 def admin():
     contract_address = get_active_contract()
     solde = 0
+    is_terminated = False
+    winner_info = None
     if contract_address:
         try:
-            solde = deploy.get_balance(contract_address)
+            solde = float(deploy.get_balance(contract_address))
+            # Récupérer les infos du gagnant pour ce contrat spécifique
+            winner_info = deploy.get_last_winner(contract_address)
+            # Le contrat est terminé seulement si le solde est 0 ET qu'il y a eu un gagnant
+            if solde == 0 and winner_info and winner_info.get('winner'):
+                is_terminated = True
         except:
             solde = 0
-    return render_template('admin.html', contract_address=contract_address, solde=solde)
+    return render_template('admin.html', contract_address=contract_address, solde=solde, is_terminated=is_terminated, winner_info=winner_info)
 
 @app.route('/admin/deploy', methods=['POST'])
 @login_required
@@ -197,7 +208,14 @@ def admin_tirage():
         deploy.tirage(contract_address)
         flash("Le tirage a été effectué avec succès ! La cagnotte a été transférée au gagnant.", "success")
     except Exception as e:
-        flash(f"Erreur lors du tirage : {str(e)}", "error")
+        error_message = str(e)
+        # Check for specific error messages
+        if "Il faut plus de participants" in error_message or "participants" in error_message.lower():
+            flash("❌ Impossible de lancer le tirage : Il faut au moins 3 participants pour effectuer le tirage.", "error")
+        elif "Seul le proprietaire" in error_message or "owner" in error_message.lower():
+            flash("❌ Erreur : Seul le propriétaire peut lancer le tirage.", "error")
+        else:
+            flash(f"❌ Erreur lors du tirage : {error_message}", "error")
         
     return redirect(url_for('admin'))
 

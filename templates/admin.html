@@ -53,7 +53,7 @@
             <div class="card border-0 shadow-sm bg-light">
                 <div class="card-body d-flex justify-content-between align-items-center flex-wrap">
                     <div>
-                        <h5 class="card-title mb-1">État du contrat actif</h5>
+                        <h5 class="card-title mb-1">{% if is_terminated %}Contrat terminé{% else %}État du contrat actif{% endif %}</h5>
                         <p class="mb-0 text-muted font-monospace">{{ contract_address if contract_address else 'Aucun
                             contrat' }}</p>
                     </div>
@@ -65,6 +65,35 @@
                 </div>
             </div>
         </div>
+
+        <!-- Bloc 4 : Dernier Gagnant -->
+        {% if winner_info and winner_info.winner %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-header bg-transparent border-0 fw-bold py-3">
+                    🏆 Dernier Gagnant
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="mb-2">Adresse du Gagnant</h5>
+                            <p class="font-monospace mb-0 fs-6">{{ winner_info.winner }}</p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <div class="mb-2">
+                                <small class="opacity-75">Gain du gagnant (90%)</small>
+                                <div class="fs-4 fw-bold">{{ "%.4f"|format(winner_info.prize) }} ETH</div>
+                            </div>
+                            <div>
+                                <small class="opacity-75">Frais association (10%)</small>
+                                <div class="fs-5">{{ "%.4f"|format(winner_info.owner_fee) }} ETH</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

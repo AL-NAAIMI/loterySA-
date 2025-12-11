@@ -7,6 +7,9 @@
             <div class="card-header bg-white border-0 pt-4 pb-0 text-center">
                 <h2 class="fw-bold text-primary">Participer à la Loterie</h2>
                 <p class="text-muted">Prix du ticket : <strong>1 Ether</strong></p>
+                <div class="alert alert-info mt-3 mb-0 small">
+                    <strong>💡 Répartition :</strong> Le gagnant reçoit 90% de la cagnotte, 10% vont à l'association.
+                </div>
             </div>
             <div class="card-body p-4 p-md-5">
                 <form action="{{ url_for('participer') }}" method="POST" autocomplete="off">

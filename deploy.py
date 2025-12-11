@@ -2,12 +2,16 @@ from solcx import compile_standard, install_solc
 import json
 from web3 import Web3
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configuration Ganache
-GANACHE_URL = "HTTP://127.0.0.1:7545"
-CHAIN_ID = 1337
-ADMIN_ADDRESS = "0x49b6c16A3fc1DC148B92A8821750f63e036d19f2"
-ADMIN_KEY = "0x92a06e15b0d0b7973d9fa3e3c94c08fd0d98f3d3b908f78f90e564a8e94a98b2"
+GANACHE_URL = os.environ.get('GANACHE_URL', 'HTTP://127.0.0.1:7545')
+CHAIN_ID = int(os.environ.get('CHAIN_ID', '1337'))
+ADMIN_ADDRESS = os.environ.get('ADMIN_ADDRESS')
+ADMIN_KEY = os.environ.get('ADMIN_KEY')
 
 # Connexion Web3
 w3 = Web3(Web3.HTTPProvider(GANACHE_URL))
@@ -82,7 +86,8 @@ def deploy_contract():
 def get_contract(contract_address):
     """Retourne une instance du contrat."""
     abi, _ = get_contract_data()
-    return w3.eth.contract(address=contract_address, abi=abi)
+    contract = w3.eth.contract(address=contract_address, abi=abi)
+    return contract
 
 def participer(contract_address, user_address, user_private_key):
     """Fait participer un utilisateur à la loterie."""
@@ -113,9 +118,60 @@ def tirage(contract_address):
     
     signed_txn = w3.eth.account.sign_transaction(transaction, private_key=ADMIN_KEY)
     tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
-    return w3.eth.wait_for_transaction_receipt(tx_hash)
+    tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    
+    # Get winner from event logs
+    winner_address = None
+    prize_amount = None
+    owner_fee = None
+    
+    for log in tx_receipt['logs']:
+        try:
+            event = contract.events.Winner().process_log(log)
+            winner_address = event['args']['winner']
+            prize_amount = w3.from_wei(event['args']['prize'], 'ether')
+            owner_fee = w3.from_wei(event['args']['ownerFee'], 'ether')
+        except:
+            pass
+    
+    # Save winner info to state.json with contract address
+    if winner_address:
+        if os.path.exists("state.json"):
+            with open("state.json", "r") as f:
+                data = json.load(f)
+        else:
+            data = {}
+        
+        data["last_winner"] = winner_address
+        data["prize_amount"] = float(prize_amount)
+        data["owner_fee"] = float(owner_fee)
+        data["winner_contract"] = contract_address
+        
+        with open("state.json", "w") as f:
+            json.dump(data, f)
+    
+    return tx_receipt
 
 def get_balance(contract_address):
     """Retourne le solde du contrat en Ether."""
     balance_wei = w3.eth.get_balance(contract_address)
     return w3.from_wei(balance_wei, "ether")
+
+def get_last_winner(contract_address=None):
+    """Récupère les informations du dernier gagnant depuis state.json"""
+    if os.path.exists("state.json"):
+        try:
+            with open("state.json", "r") as f:
+                data = json.load(f)
+                # Vérifier que le gagnant appartient au contrat actuel
+                if contract_address and data.get("winner_contract") != contract_address:
+                    return None
+                return {
+                    "winner": data.get("last_winner"),
+                    "prize": data.get("prize_amount"),
+                    "owner_fee": data.get("owner_fee"),
+                    "contract": data.get("winner_contract")
+                }
+        except:
+            return None
+    return None

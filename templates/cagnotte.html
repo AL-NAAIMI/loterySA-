@@ -11,6 +11,11 @@
                 {{ solde }} <span class="fs-4">ETH</span>
             </div>
             <p class="card-text opacity-75">Contrat : {{ contract_address }}</p>
+            <hr class="opacity-25 my-3">
+            <p class="card-text small opacity-75 mb-0">
+                🏆 Le gagnant remportera <strong>90%</strong> ({{ "%.2f"|format(solde * 0.9) }} ETH)<br>
+                🤝 L'association recevra <strong>10%</strong> ({{ "%.2f"|format(solde * 0.1) }} ETH)
+            </p>
         </div>
     </div>
 
