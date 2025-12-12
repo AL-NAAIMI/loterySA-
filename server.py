@@ -81,42 +81,22 @@ def index():
     contract_address = get_active_contract()
     return render_template('index.html', contract_address=contract_address)
 
-@app.route('/participer', methods=['GET', 'POST'])
+@app.route('/participer', methods=['GET'])
 def participer():
+    """Page pour participer à la loterie via MetaMask"""
     contract_address = get_active_contract()
-    
-    if request.method == 'POST':
-        if not contract_address:
-            flash("Erreur : Aucun contrat n'est actif actuellement.", "error")
-            return redirect(url_for('index'))
 
-        user_address = request.form.get('address', '').strip()
-        user_key = request.form.get('key', '').strip()
-        
-        # Validate inputs
-        if not user_address or not user_key:
-            flash("Veuillez remplir tous les champs.", "error")
-            return redirect(url_for('participer'))
-        
-        if not validate_ethereum_address(user_address):
-            flash("Adresse Ethereum invalide. Format attendu : 0x suivi de 40 caractères hexadécimaux.", "error")
-            return redirect(url_for('participer'))
-        
-        if not validate_private_key(user_key):
-            flash("Clé privée invalide. Format attendu : 0x suivi de 64 caractères hexadécimaux.", "error")
-            return redirect(url_for('participer'))
+    if not contract_address:
+        contract_abi = []  # Aucun contrat actif
+    else:
+        abi, _ = deploy.get_contract_data()
+        contract_abi = json.dumps(abi)
 
-        try:
-            deploy.participer(contract_address, user_address, user_key)
-            flash("Félicitations ! Vous avez participé avec succès.", "success")
-            return redirect(url_for('index'))
-        except Exception as e:
-            # Don't expose internal errors to users
-            flash("Erreur lors de la participation. Veuillez vérifier vos informations.", "error")
-            app.logger.error(f"Participation error: {str(e)}")
-            return redirect(url_for('participer'))
-
-    return render_template('participer.html', contract_address=contract_address)
+    return render_template(
+        "participer.html",
+        contract_address=contract_address,
+        contract_abi=contract_abi
+    )
 
 @app.route('/cagnotte')
 def cagnotte():

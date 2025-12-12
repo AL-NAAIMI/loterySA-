@@ -1,51 +1,58 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card border-0 shadow-lg mt-4">
-            <div class="card-header bg-white border-0 pt-4 pb-0 text-center">
-                <h2 class="fw-bold text-primary">Participer à la Loterie</h2>
-                <p class="text-muted">Prix du ticket : <strong>1 Ether</strong></p>
-                <div class="alert alert-info mt-3 mb-0 small">
-                    <strong>💡 Répartition :</strong> Le gagnant reçoit 90% de la cagnotte, 10% vont à l'association.
-                </div>
-            </div>
-            <div class="card-body p-4 p-md-5">
-                <form action="{{ url_for('participer') }}" method="POST" autocomplete="off">
-                    <div class="mb-4">
-                        <label for="contract" class="form-label text-muted small text-uppercase fw-bold">Adresse du
-                            Contrat</label>
-                        <input type="text" class="form-control bg-light" id="contract"
-                            value="{{ contract_address if contract_address else 'Aucun contrat actif' }}" readonly>
-                    </div>
+<div class="container py-5">
 
-                    <div class="mb-4">
-                        <label for="address" class="form-label">Votre Adresse Ethereum</label>
-                        <input type="text" class="form-control" id="address" name="address" placeholder="0x..." 
-                            pattern="0x[a-fA-F0-9]{40}" title="Adresse Ethereum valide (0x + 40 caractères hexadécimaux)"
-                            maxlength="42" autocomplete="off" required>
-                        <div class="form-text">L'adresse qui recevra les gains si vous gagnez.</div>
-                    </div>
+    <h1 class="mb-4 text-center">Participer à la loterie</h1>
 
-                    <div class="mb-4">
-                        <label for="key" class="form-label">Votre Clé Privée</label>
-                        <input type="password" class="form-control" id="key" name="key"
-                            placeholder="0x..." pattern="0x[a-fA-F0-9]{64}" 
-                            title="Clé privée valide (0x + 64 caractères hexadécimaux)"
-                            maxlength="66" autocomplete="off" required>
-                        <div class="form-text text-warning">⚠️ Ne partagez jamais votre clé privée. Ceci est une démo locale sur Ganache.</div>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold" {% if not contract_address
-                            %}disabled{% endif %}>
-                            Participer pour 1 Ether
-                        </button>
-                    </div>
-                </form>
-            </div>
+    {% if not contract_address %}
+        <div class="alert alert-danger">
+            Aucun contrat actif n'a été déployé.
         </div>
-    </div>
+    {% else %}
+
+        <p class="text-muted">Contrat actif : <code>{{ contract_address }}</code></p>
+
+        <button class="btn btn-primary btn-lg" onclick="participer()">
+            🎟️ Participer (1 Ether)
+        </button>
+
+    {% endif %}
 </div>
+
+<!-- Web3.js -->
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+<script>
+    // Injection depuis Flask
+    const contractAddress = "{{ contract_address }}";
+    const contractABI = {{ contract_abi|safe }};
+
+    async function participer() {
+        if (!window.ethereum) {
+            alert("Veuillez installer MetaMask !");
+            return;
+        }
+
+        const web3 = new Web3(window.ethereum);
+
+        // Demande la permission à MetaMask
+        const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        try {
+            // Nom exact de la fonction Solidity : 'participer'
+            await contract.methods.participer().send({
+                from: accounts[0],
+                value: web3.utils.toWei("0.01", "ether")
+            });
+
+            alert("Participation envoyée !");
+        } catch (error) {
+            console.error(error);
+            alert("Erreur : " + error.message);
+        }
+    }
+</script>
+
 {% endblock %}
