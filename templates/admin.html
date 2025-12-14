@@ -59,6 +59,8 @@
                     </div>
                     <div class="text-end mt-3 mt-md-0">
                         <div class="display-6 fw-bold text-primary">{{ solde }} ETH</div>
+                        <div class="fs-5 text-muted">≈ {{ "%.2f"|format(solde_eur) }} EUR</div>
+                        <p class="small text-muted mb-2">Prix ETH : {{ "%.2f"|format(eth_price_eur) }} EUR</p>
                         <a href="{{ url_for('cagnotte') }}" class="text-decoration-none small">Voir la page cagnotte
                             &rarr;</a>
                     </div>
@@ -76,17 +78,25 @@
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-8">
+                            {% if winner_info.winner_pseudo %}
+                            <h5 class="mb-2">🎉 {{ winner_info.winner_pseudo }}</h5>
+                            <p class="small opacity-75 mb-1">Adresse :</p>
+                            <p class="font-monospace mb-0 fs-6">{{ winner_info.winner }}</p>
+                            {% else %}
                             <h5 class="mb-2">Adresse du Gagnant</h5>
                             <p class="font-monospace mb-0 fs-6">{{ winner_info.winner }}</p>
+                            {% endif %}
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <small class="opacity-75">Gain du gagnant (90%)</small>
                                 <div class="fs-4 fw-bold">{{ "%.4f"|format(winner_info.prize) }} ETH</div>
+                                <div class="fs-6 opacity-90">≈ {{ "%.2f"|format(winner_info.prize_eur) }} EUR</div>
                             </div>
                             <div>
                                 <small class="opacity-75">Frais association (10%)</small>
                                 <div class="fs-5">{{ "%.4f"|format(winner_info.owner_fee) }} ETH</div>
+                                <div class="small opacity-90">≈ {{ "%.2f"|format(winner_info.owner_fee_eur) }} EUR</div>
                             </div>
                         </div>
                     </div>

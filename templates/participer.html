@@ -1,23 +1,53 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="container py-5">
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-lg mt-4">
+            <div class="card-header bg-white border-0 pt-4 pb-0 text-center">
+                <h2 class="fw-bold text-primary">Participer à la Loterie</h2>
+                <p class="text-muted">Prix du ticket : <strong>1 ETH</strong></p>
+                <p class="text-muted small">≈ {{ "%.2f"|format(ticket_price_eur) }} EUR</p>
+                <div class="alert alert-info mt-3 mb-0 small">
+                    <strong>💡 Répartition :</strong> Le gagnant reçoit 90% de la cagnotte, 10% vont à l'association.
+                </div>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                {% if not contract_address %}
+                    <div class="alert alert-danger">
+                        Aucun contrat actif n'a été déployé.
+                    </div>
+                {% else %}
+                    <div class="mb-4">
+                        <label for="pseudo" class="form-label">Votre Pseudo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="pseudo" 
+                            placeholder="Ex: PhotoFan2024" 
+                            pattern="[a-zA-Z0-9 _-]{2,30}"
+                            title="Lettres, chiffres, espaces, tirets et underscores uniquement (2-30 caractères)"
+                            minlength="2"
+                            maxlength="30" 
+                            required>
+                        <div class="form-text">🔒 Ce pseudo sera affiché si vous gagnez. Lettres, chiffres, espaces, - et _ autorisés (2-30 caractères).</div>
+                    </div>
 
-    <h1 class="mb-4 text-center">Participer à la loterie</h1>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Adresse du Contrat</label>
+                        <input type="text" class="form-control bg-light" value="{{ contract_address }}" readonly>
+                    </div>
 
-    {% if not contract_address %}
-        <div class="alert alert-danger">
-            Aucun contrat actif n'a été déployé.
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg py-3 fw-bold" onclick="participer()">
+                            🎟️ Participer avec MetaMask (1 ETH)
+                        </button>
+                    </div>
+
+                    <!-- <div class="alert alert-warning mt-3 small">
+                        🦊 <strong>MetaMask requis :</strong> Assurez-vous d'avoir MetaMask installé et connecté à votre réseau Ganache local.
+                    </div> -->
+                {% endif %}
+            </div>
         </div>
-    {% else %}
-
-        <p class="text-muted">Contrat actif : <code>{{ contract_address }}</code></p>
-
-        <button class="btn btn-primary btn-lg" onclick="participer()">
-            🎟️ Participer (1 Ether)
-        </button>
-
-    {% endif %}
+    </div>
 </div>
 
 <!-- Web3.js -->
@@ -29,28 +59,71 @@
     const contractABI = {{ contract_abi|safe }};
 
     async function participer() {
+        // Vérifier le pseudo
+        const pseudoInput = document.getElementById('pseudo');
+        const pseudo = pseudoInput.value.trim();
+        
+        if (!pseudo) {
+            alert("⚠️ Veuillez entrer votre pseudo avant de participer.");
+            pseudoInput.focus();
+            return;
+        }
+
+        // Validation du pseudo
+        const pseudoPattern = /^[a-zA-Z0-9 _-]{2,30}$/;
+        if (!pseudoPattern.test(pseudo)) {
+            alert("⚠️ Pseudo invalide. Utilisez uniquement lettres, chiffres, espaces, tirets et underscores (2-30 caractères).");
+            pseudoInput.focus();
+            return;
+        }
+
         if (!window.ethereum) {
-            alert("Veuillez installer MetaMask !");
+            alert("⚠️ Veuillez installer MetaMask !");
             return;
         }
 
         const web3 = new Web3(window.ethereum);
 
-        // Demande la permission à MetaMask
-        const accounts = await ethereum.request({ method: "eth_requestAccounts" });
-        const contract = new web3.eth.Contract(contractABI, contractAddress);
-
         try {
-            // Nom exact de la fonction Solidity : 'participer'
-            await contract.methods.participer().send({
-                from: accounts[0],
-                value: web3.utils.toWei("0.01", "ether")
+            // Demande la permission à MetaMask
+            const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+            const userAddress = accounts[0];
+            
+            // Sauvegarder le pseudo avant la transaction
+            const saveResponse = await fetch('/save-pseudo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    address: userAddress,
+                    pseudo: pseudo
+                })
             });
 
-            alert("Participation envoyée !");
+            const saveResult = await saveResponse.json();
+            if (!saveResult.success) {
+                alert("⚠️ " + saveResult.message);
+                return;
+            }
+
+            // Transaction blockchain
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+            await contract.methods.participer().send({
+                from: userAddress,
+                value: web3.utils.toWei("1", "ether")
+            });
+
+            alert("✅ Félicitations " + pseudo + " ! Vous avez participé avec succès.");
+            window.location.href = "/";
+            
         } catch (error) {
             console.error(error);
-            alert("Erreur : " + error.message);
+            if (error.code === 4001) {
+                alert("⚠️ Transaction annulée.");
+            } else {
+                alert("❌ Erreur : " + error.message);
+            }
         }
     }
 </script>

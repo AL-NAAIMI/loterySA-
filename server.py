@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from functools import wraps
 from markupsafe import escape
 import deploy
+import price_api
 import json
 import os
 import secrets
@@ -31,7 +32,7 @@ def set_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cdn.jsdelivr.net https://api.coingecko.com;"
     return response
 
 def login_required(f):
@@ -59,6 +60,17 @@ def validate_private_key(key):
     pattern = r'^0x[a-fA-F0-9]{64}$'
     return bool(re.match(pattern, key))
 
+def validate_pseudo(pseudo):
+    """Validate pseudo format - only alphanumeric, spaces, hyphens, underscores"""
+    if not pseudo or not isinstance(pseudo, str):
+        return False
+    # Length check
+    if len(pseudo) < 2 or len(pseudo) > 30:
+        return False
+    # Only letters, numbers, spaces, hyphens, underscores
+    pattern = r'^[a-zA-Z0-9 _-]+$'
+    return bool(re.match(pattern, pseudo))
+
 def sanitize_input(value, max_length=200):
     """Sanitize user input"""
     if not value:
@@ -76,15 +88,55 @@ def get_active_contract():
             return None
     return None
 
+def save_participant_pseudo(address, pseudo):
+    """Sauvegarde le pseudo d'un participant"""
+    if os.path.exists("state.json"):
+        with open("state.json", "r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+    
+    if "participants" not in data:
+        data["participants"] = {}
+    
+    data["participants"][address.lower()] = pseudo
+    
+    with open("state.json", "w") as f:
+        json.dump(data, f)
+
+def get_participant_pseudo(address):
+    """Récupère le pseudo d'un participant"""
+    if os.path.exists("state.json"):
+        try:
+            with open("state.json", "r") as f:
+                data = json.load(f)
+                participants = data.get("participants", {})
+                return participants.get(address.lower(), None)
+        except:
+            return None
+    return None
+
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon or return 204 No Content"""
+    return '', 204
+
 @app.route('/')
 def index():
     contract_address = get_active_contract()
-    return render_template('index.html', contract_address=contract_address)
+    eth_price_eur = price_api.get_eth_price_eur()
+    ticket_price_eur = price_api.eth_to_eur(1)  # 1 ETH = prix du ticket
+    return render_template('index.html', 
+                         contract_address=contract_address,
+                         eth_price_eur=eth_price_eur,
+                         ticket_price_eur=ticket_price_eur)
 
 @app.route('/participer', methods=['GET'])
 def participer():
     """Page pour participer à la loterie via MetaMask"""
     contract_address = get_active_contract()
+    eth_price_eur = price_api.get_eth_price_eur()
+    ticket_price_eur = price_api.eth_to_eur(1)
 
     if not contract_address:
         contract_abi = []  # Aucun contrat actif
@@ -95,20 +147,66 @@ def participer():
     return render_template(
         "participer.html",
         contract_address=contract_address,
-        contract_abi=contract_abi
+        contract_abi=contract_abi,
+        eth_price_eur=eth_price_eur,
+        ticket_price_eur=ticket_price_eur
     )
+
+@app.route('/save-pseudo', methods=['POST'])
+def save_pseudo():
+    """Sauvegarde le pseudo d'un participant (appelé par JavaScript)"""
+    data = request.get_json()
+    
+    if not data:
+        return {'success': False, 'message': 'Aucune donnée reçue'}, 400
+    
+    user_address = data.get('address', '').strip()
+    user_pseudo = data.get('pseudo', '').strip()
+    
+    # Validate inputs
+    if not user_address or not user_pseudo:
+        return {'success': False, 'message': 'Adresse et pseudo requis'}, 400
+    
+    if not validate_ethereum_address(user_address):
+        return {'success': False, 'message': 'Adresse Ethereum invalide'}, 400
+    
+    if not validate_pseudo(user_pseudo):
+        return {'success': False, 'message': 'Pseudo invalide. Utilisez uniquement lettres, chiffres, espaces, tirets et underscores (2-30 caractères)'}, 400
+    
+    # Sanitize and save
+    user_pseudo = sanitize_input(user_pseudo, max_length=30)
+    save_participant_pseudo(user_address, user_pseudo)
+    
+    return {'success': True, 'message': f'Pseudo "{user_pseudo}" sauvegardé'}, 200
 
 @app.route('/cagnotte')
 def cagnotte():
     contract_address = get_active_contract()
     solde = 0
+    eth_price_eur = price_api.get_eth_price_eur()
+    solde_eur = 0
+    winner_eur = 0
+    owner_eur = 0
+    error = None
+    
     if contract_address:
         try:
             solde = float(deploy.get_balance(contract_address))
-        except:
-            solde = "Erreur de lecture"
+            solde_eur = price_api.eth_to_eur(solde)
+            winner_eur = price_api.eth_to_eur(solde * 0.9)
+            owner_eur = price_api.eth_to_eur(solde * 0.1)
+        except Exception as e:
+            error = "Erreur de lecture du solde"
+            solde = 0
             
-    return render_template('cagnotte.html', contract_address=contract_address, solde=solde)
+    return render_template('cagnotte.html', 
+                         contract_address=contract_address, 
+                         solde=solde,
+                         eth_price_eur=eth_price_eur,
+                         solde_eur=solde_eur,
+                         winner_eur=winner_eur,
+                         owner_eur=owner_eur,
+                         error=error)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -153,17 +251,33 @@ def admin():
     solde = 0
     is_terminated = False
     winner_info = None
+    eth_price_eur = price_api.get_eth_price_eur()
+    
     if contract_address:
         try:
             solde = float(deploy.get_balance(contract_address))
             # Récupérer les infos du gagnant pour ce contrat spécifique
             winner_info = deploy.get_last_winner(contract_address)
+            
+            # Ajouter les conversions EUR si winner_info existe
+            if winner_info and winner_info.get('prize'):
+                winner_info['prize_eur'] = price_api.eth_to_eur(winner_info['prize'])
+                winner_info['owner_fee_eur'] = price_api.eth_to_eur(winner_info['owner_fee'])
+            
             # Le contrat est terminé seulement si le solde est 0 ET qu'il y a eu un gagnant
             if solde == 0 and winner_info and winner_info.get('winner'):
                 is_terminated = True
         except:
             solde = 0
-    return render_template('admin.html', contract_address=contract_address, solde=solde, is_terminated=is_terminated, winner_info=winner_info)
+    
+    solde_eur = price_api.eth_to_eur(solde)
+    return render_template('admin.html', 
+                         contract_address=contract_address, 
+                         solde=solde, 
+                         is_terminated=is_terminated, 
+                         winner_info=winner_info,
+                         eth_price_eur=eth_price_eur,
+                         solde_eur=solde_eur)
 
 @app.route('/admin/deploy', methods=['POST'])
 @login_required

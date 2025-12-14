@@ -142,7 +142,13 @@ def tirage(contract_address):
         else:
             data = {}
         
+        # Récupérer le pseudo du gagnant s'il existe
+        winner_pseudo = None
+        if "participants" in data:
+            winner_pseudo = data["participants"].get(winner_address.lower())
+        
         data["last_winner"] = winner_address
+        data["last_winner_pseudo"] = winner_pseudo
         data["prize_amount"] = float(prize_amount)
         data["owner_fee"] = float(owner_fee)
         data["winner_contract"] = contract_address
@@ -168,6 +174,7 @@ def get_last_winner(contract_address=None):
                     return None
                 return {
                     "winner": data.get("last_winner"),
+                    "winner_pseudo": data.get("last_winner_pseudo"),
                     "prize": data.get("prize_amount"),
                     "owner_fee": data.get("owner_fee"),
                     "contract": data.get("winner_contract")

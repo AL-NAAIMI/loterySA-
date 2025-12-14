@@ -1,7 +1,1 @@
-{
-    "contract_address": "0x32F1F8397FbFD41A2C5Cde236856f618B7D97184",
-    "last_winner": "0x720D5146b3c9Df36f2E0b21f2790bAd017ff053F",
-    "prize_amount": 2.7,
-    "owner_fee": 0.3,
-    "winner_contract": "0x32F1F8397FbFD41A2C5Cde236856f618B7D97184"
-}
+{"contract_address": "0x32F1F8397FbFD41A2C5Cde236856f618B7D97184", "last_winner": "0x720D5146b3c9Df36f2E0b21f2790bAd017ff053F", "prize_amount": 2.7, "owner_fee": 0.3, "winner_contract": "0x32F1F8397FbFD41A2C5Cde236856f618B7D97184", "participants": {"0xb9ad2203dd808e0cb3066429a9e77d98d3a75605": "Salim", "0x68f085e171f93b0d17376e065714614a8ca0eab5": "salim"}}

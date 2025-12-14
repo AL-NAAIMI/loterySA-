@@ -17,7 +17,8 @@
                 <div class="card-body p-5">
                     <div class="display-1 mb-3">🎟️</div>
                     <h3 class="card-title">Tentez votre chance</h3>
-                    <p class="card-text">Le ticket ne coûte que 1 Ether. Inscrivez-vous en quelques clics.</p>
+                    <p class="card-text">Le ticket ne coûte que <strong>1 ETH</strong></p>
+                    <p class="card-text small text-muted">≈ {{ "%.2f"|format(ticket_price_eur) }} EUR</p>
                     <a href="{{ url_for('participer') }}" class="btn btn-primary btn-lg w-100 mt-3">Participer</a>
                 </div>
             </div>
