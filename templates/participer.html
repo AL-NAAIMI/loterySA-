@@ -6,7 +6,7 @@
         <div class="card border-0 shadow-lg mt-4">
             <div class="card-header bg-white border-0 pt-4 pb-0 text-center">
                 <h2 class="fw-bold text-primary">Participer à la Loterie</h2>
-                <p class="text-muted">Prix du ticket : <strong>1 ETH</strong></p>
+                <p class="text-muted">Prix du ticket : <strong>0.1 ETH</strong></p>
                 <p class="text-muted small">≈ {{ "%.2f"|format(ticket_price_eur) }} EUR</p>
                 <div class="alert alert-info mt-3 mb-0 small">
                     <strong>💡 Répartition :</strong> Le gagnant reçoit 90% de la cagnotte, 10% vont à l'association.
@@ -37,7 +37,7 @@
 
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary btn-lg py-3 fw-bold" onclick="participer()">
-                            🎟️ Participer avec MetaMask (1 ETH)
+                            🎟️ Participer avec MetaMask (0.1 ETH)
                         </button>
                     </div>
 
@@ -111,7 +111,7 @@
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             await contract.methods.participer().send({
                 from: userAddress,
-                value: web3.utils.toWei("1", "ether")
+                value: web3.utils.toWei("0.1", "ether")
             });
 
             alert("✅ Félicitations " + pseudo + " ! Vous avez participé avec succès.");

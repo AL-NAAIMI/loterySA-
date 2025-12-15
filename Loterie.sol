@@ -5,7 +5,7 @@ contract Loterie {
     address public owner;
     uint public randNonce = 0;
     address[] public participants;
-    uint public ticketPrice = 1 ether;
+    uint public ticketPrice = 0.1 ether;
     address public lastWinner;
 
     event Winner(address indexed winner, uint prize, uint ownerFee);
@@ -19,7 +19,7 @@ contract Loterie {
             msg.sender != owner,
             "le propritaire n'a pas le droit de participer a la loterie"
         );
-        require(msg.value == ticketPrice, "TIP; le prix du ticket est 1 ether");
+        require(msg.value == ticketPrice, "TIP; le prix du ticket est 0.1 ether");
 
         participants.push(msg.sender);
     }
@@ -43,16 +43,16 @@ contract Loterie {
         uint indexGagne = random(participants.length);
         address gagnant = participants[indexGagne];
         
-        // Calculate 10% for owner and 90% for winner
+        //calculer 10% pour le proprietaire et 90% pour le gagnant
         uint totalBalance = address(this).balance;
         uint ownerFee = (totalBalance * 10) / 100;
         uint winnerPrize = totalBalance - ownerFee;
         
-        // Transfer funds
+        //pour transferer les fonds
         payable(owner).transfer(ownerFee);
         payable(gagnant).transfer(winnerPrize);
         
-        // Store winner and emit event
+        //stocker le gagnant et émettre un événement
         lastWinner = gagnant;
         emit Winner(gagnant, winnerPrize, ownerFee);
         
